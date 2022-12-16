@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>HelloWorldJekinSOA</groupId>
+    <artifactId>HelloWorldJekinSOA</artifactId>
+    <version>1.0</version>
+    <packaging>sar</packaging>
+    
+    <!--
+           This POM was generated from the SOA Maven Archetype.
+           Comments in this POM guide you how to use it with your project.
+           This POM relates to this SOA Composite, i.e. the one in this same directory.
+           There is another POM in the SOA Application directory (up one) which handles 
+           the whole SOA Application, which may contain additional projects.
+
+           The parent points to the common SOA parent POM.  That is a special POM that is 
+           shipped by Oracle as a point of customization (only).  You can add default values
+           for properties like serverUrl, etc. to the SOA common parent POM, so that you
+           do not have to specify them over and over in every project POM. 
+    -->
+    <parent>
+        <groupId>com.oracle.soa</groupId>
+        <artifactId>sar-common</artifactId>
+        <version>12.2.1-0-0</version>
+        <relativePath></relativePath>
+    </parent>
+    
+    <properties>
+		<composite.partition>default</composite.partition>
+		<overwrite>true</overwrite>
+        <forceDefault>true</forceDefault>
+        <regenerateRulebase>false</regenerateRulebase>
+        <keepInstancesOnRedeploy>false</keepInstancesOnRedeploy>
+        <composite.revision>${project.version}</composite.revision>
+		
+        <!-- these parameters are used by the compile goal -->
+        <scac.input.dir>${project.basedir}/SOA/</scac.input.dir>
+        <scac.output.dir>${project.basedir}/target</scac.output.dir>
+        <scac.input>${scac.input.dir}/composite.xml</scac.input>
+        <scac.output>${scac.output.dir}/out.xml</scac.output>
+        <scac.error>${scac.output.dir}/error.txt</scac.error>
+        <scac.displayLevel>1</scac.displayLevel>
+        <!--input>test-soa-project</input-->
+    </properties>
+
+    <!--
+           These refer to the properties defined above.  You should probably not need to make 
+           any changes beflow this point - these just point to the properties above.
+    -->
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.oracle.soa.plugin</groupId>
+                <artifactId>oracle-soa-plugin</artifactId>
+                <version>12.2.1-0-0</version>
+				<dependencies>
+					<dependency>
+						<groupId>javax.el</groupId>
+						<artifactId>javax.el-api</artifactId>
+						<version>3.0.0</version>
+					</dependency>
+					<dependency>
+						<groupId>com.oracle</groupId>
+						<artifactId>ucp</artifactId>
+						<version>12.1.0.2.0</version>
+					</dependency>
+				</dependencies>
+				<configuration>
+                    <compositeName>${composite.name}</compositeName>
+                    <composite>${scac.input}</composite>
+                    <sarLocation>${scac.output.dir}/sca_${project.artifactId}_rev${project.version}.jar</sarLocation>
+                    <serverUrl>${serverUrl}</serverUrl>
+                    <!-- note: compositeRevision is needed to package, revision is needed to undeploy -->
+                    <compositeRevision>${composite.revision}</compositeRevision>
+                    <revision>${composite.revision}</revision>
+                    <scacInputDir>${scac.input.dir}</scacInputDir>
+                    <!-- Uncomment the appHome property if your composite 
+                         depends on MDS. -->
+                    <appHome>${project.basedir}/..</appHome>
+                    <!--  If you have a composite which contains a component that 
+                          depends on MDS (eg. Human Task, Business Rule) AND you 
+                          want to use a file-based MDS repository, then you 
+                          need to do either:
+                          1. update the .adf/META-INF/adf-config.xml to point to
+                             the correct location of the file based repository, i.e.
+                             remove the reference to ${soa.oracle.home} in that file, or
+                          2. define oracleHome and soaOracleHome here and leave the adf-config.xml file
+                             as is.  Note that the correct value for soaOracleHome is the path to 
+                             your SOA Quickstart or JDeveloper install directory, 
+                             with "/soa" appended to it.
+                    -->
+                    <!--<oracleHome>JDEV_HOME</oracleHome>-->
+                    <!--<soaOracleHome>JDEV_HOME/soa</soaOracleHome>-->
+                    <input>${composite.name}</input>
+					<!--newly added by suresh for java embedding -->
+					<excludes>
+					<exclude>**/target/</exclude>
+					<exclude>**/pom.xml</exclude>
+					<exclude>**/SCA-INF/lib/*onlyForCompile.jar</exclude>
+					</excludes>
+					<!--ends here -->
+                </configuration>
+                <!-- extensions=true is needed to use the custom sar packaging type -->
+                <extensions>true</extensions>
+            </plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<version>1.4</version>
+				<executions>
+				  <execution>
+					<id>enforce-property</id>
+					<goals>
+					  <goal>enforce</goal>
+					</goals>
+					<configuration>
+					  <rules>
+						<requireProperty>
+						  <property>env</property>
+						  <message>----------------------------------------
+			You must pass a value for the 'env' property!
+			Example: mvn -Denv=dev
+			----------------------------------------
+						  </message>
+						</requireProperty>
+					  </rules>
+					  <fail>true</fail>
+					</configuration>
+				  </execution>
+				</executions>
+			</plugin>
+			
+			<!--newly added by suresh for java embedding -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>3.0.2</version>
+				<executions>
+					<execution>
+						<id>copy</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>copy</goal>
+						</goals>
+						<configuration>
+							<artifactItems>
+								<artifactItem>
+									<groupId>com.oracle.soa</groupId>
+									<artifactId>orabpel</artifactId>
+									<version>12.2.1-0-0</version>
+									<type>jar</type>
+									<overWrite>false</overWrite>
+									<outputDirectory>${scac.input.dir}/SCA-INF/lib</outputDirectory>
+									<destFileName>orabpel_onlyForCompile.jar</destFileName>
+								</artifactItem>
+								<artifactItem>
+									<groupId>com.oracle.jdbc</groupId>
+									<artifactId>xmlparserv2</artifactId>
+									<version>12.2.0.1</version>
+									<type>jar</type>
+									<overWrite>false</overWrite>
+									<outputDirectory>${scac.input.dir}/SCA-INF/lib</outputDirectory>
+									<destFileName>xmlparserv2_onlyForCompile.jar</destFileName>
+								</artifactItem>
+							</artifactItems>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			
+			<!--plugin>
+				<groupId>com.oracle.soa.plugin</groupId>
+				<artifactId>oracle-soa-plugin</artifactId>
+				<version>12.2.1-0-0</version>
+				<executions>
+					<execution>
+						<id>copy</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>copy</goal>
+						</goals>
+						<configuration>
+							<artifactItems>
+								<artifactItem>
+									<groupId>com.oracle.soa</groupId>
+									<artifactId>orabpel</artifactId>
+									<version>12.2.1-0-0</version>
+									<type>jar</type>
+									<overWrite>false</overWrite>
+									<outputDirectory>${scac.input.dir}/SCA-INF/lib</outputDirectory>
+								</artifactItem>
+							</artifactItems>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin-->
+			
+			<!--ends here -->
+			
+			<plugin>
+    <artifactId>maven-resources-plugin</artifactId>
+    <version>2.7</version>
+    <configuration>
+        <encoding>UTF-8</encoding>
+    </configuration>
+    <executions>
+	
+	   <execution>
+            <id>copy-project-properties</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.basedir}/tmp</outputDirectory>
+              <resources>         
+                <resource>
+                  <directory>${project.basedir}/../env</directory>
+                  <includes>
+                    <include>*.properties</include>
+                  </includes>
+                  <filtering>true</filtering>
+                </resource>
+              </resources>             
+            </configuration>           
+          </execution>     
+	
+	
+      <execution>
+        <id>copy-config-plan</id>
+        <phase>prepare-package</phase>
+        <goals>
+          <goal>copy-resources</goal>
+        </goals>
+        <configuration>
+          <outputDirectory>${project.basedir}/SOA</outputDirectory>
+          <resources>         
+            <resource>
+              <directory>${project.basedir}</directory>
+              <includes>
+                <include>*cfgplan_UAT.xml</include>
+              </includes>
+              <filtering>true</filtering>
+            </resource>
+          </resources>             
+        </configuration>           
+      </execution>     
+    </executions>
+    </plugin>   
+	 <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>properties-maven-plugin</artifactId>
+        <version>1.0-alpha-2</version>
+        <executions>
+          <execution>
+            <phase>initialize</phase>
+            <goals>
+              <goal>read-project-properties</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <files>
+            <!--file>${project.basedir}/tmp/${env}.properties</file-->
+          </files>
+        </configuration>
+    </plugin>
+	
+	<plugin>
+        <artifactId>maven-clean-plugin</artifactId>
+        <version>2.6.1</version>
+        <configuration>
+          <filesets>
+            <fileset>
+              <directory>${project.basedir}/tmp</directory>
+              <followSymlinks>false</followSymlinks>
+            </fileset>
+          </filesets>
+        </configuration>
+    </plugin>              
+   </plugins>
+   <filters>
+  <filter>${project.basedir}/../env/${env}.properties</filter>
+  </filters>     
+    </build>
+</project>
